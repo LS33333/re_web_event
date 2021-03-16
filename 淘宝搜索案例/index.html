@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+    <!-- 导入页面的基本样式 -->
+    <link rel="stylesheet" href="./css/search.css" />
+    <!-- 导入 jQuery -->
+    <script src="./lib/jquery.js"></script>
+    <script src="../lib/template-web.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Logo -->
+        <img src="./images/taobao_logo.png" alt="" class="logo" />
+
+        <div class="box">
+            <!-- tab 栏 -->
+            <div class="tabs">
+                <div class="tab-active">宝贝</div>
+                <div>店铺</div>
+            </div>
+            <!-- 搜索区域（搜索框和搜索按钮） -->
+            <div class="search-box">
+                <input type="text" class="ipt" placeholder="请输入要搜索的内容" id="search-box" />
+                <button class="btnSearch">搜索</button>
+            </div>
+            <!-- 搜索建议列表 -->
+            <div id="suggest-list"></div>
+        </div>
+    </div>
+
+    <!-- 定义数据 -->
+
+
+    <!-- 定义模板 -->
+    <script type="text/html" id="tpl-suggestList">
+        {{each result}}
+        <div id="suggest-item">{{$value[0]}}</div>
+        {{/each}}
+    </script>
+
+    <script>
+        $(function() {
+            var timer = null;
+
+            //创建一个空对象，缓存已经输入的信息，相同的输入信息不用重复调用
+            var cacheObj = {}
+
+            // 定义一个防抖的函数
+            function debounceSearch(kw) {
+                timer = setTimeout(function() {
+                    getSearchCon(kw)
+                }, 500)
+            }
+
+            $('#search-box').on('keyup', function() {
+                // 清空timer
+                clearTimeout(timer)
+                var keywords = $(this).val().trim();
+                if (keywords.length <= 0) {
+                    return $('#suggest-list').hide()
+                }
+
+                if (cacheObj[keywords]) {
+                    return renderSuggestList(cacheObj[keywords])
+                }
+                // console.log(keywords);
+                // getSearchCon(keywords)
+                debounceSearch(keywords)
+            })
+
+            // 通过JSONP获取淘宝端口中的数据
+            function getSearchCon(kw) {
+                $.ajax({
+                    url: 'http://suggest.taobao.com/sug?q=' + kw,
+                    dataType: 'jsonp',
+                    success: function(res) {
+                        renderSuggestList(res)
+                    }
+                })
+            }
+
+            // 定义渲染页面结构的函数
+            function renderSuggestList(res) {
+                if (res.result.length <= 0) {
+                    return $('#suggest-list').empty().hide()
+                }
+                var htmlStr = template('tpl-suggestList', res)
+                $('#suggest-list').html(htmlStr).show();
+
+                var k = $('#search-box').val().trim();
+                cacheObj[k] = res
+            }
+        })
+    </script>
+</body>
+
+</html>
